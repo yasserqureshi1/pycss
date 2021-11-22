@@ -1,5 +1,3 @@
-# Gaussian gerivatives using Hermite polynomials
-
 import numpy as np
 
 
@@ -13,7 +11,7 @@ def _gaussian_kernel(sigma, order, t):
     if sigma == 0:
         return np.array([1.0])
 
-    # precalculate some stuff
+    # pre-calculate some stuff
     sigma2 = sigma ** 2
     sqrt2 = np.sqrt(2)
 
@@ -58,6 +56,25 @@ def gaussian_kernel(sigma, order=0, N=None, returnt=False):
     """ gaussian_kernel(sigma, order, N, returnt)
     Compute the gaussian kernel given a width and derivative order and optionally
     the length.
+
+    Parameters
+    -------------
+    sigma : float
+        Width of the Gaussian kernel
+    order : int
+        Derivative order of the kernel
+    N : int, optional
+        Number of samples to return
+    returnt : Bool
+        Whether or not to return the abscissa
+
+    Returns
+    -----------
+    k : float
+        The samples
+    t : float
+        Sample indices
+
     """
 
     # checking inputs
@@ -81,9 +98,9 @@ def gaussian_kernel(sigma, order=0, N=None, returnt=False):
     sigmaMin = 0.5 + order ** (0.62) / 5
     if sigma < sigmaMin:
         print('WARNING: The scale (sigma) is very small for the given order, '
-              'better use a larger scale!')
+                'better use a larger scale!')
 
-    # Create t vector which indicates the x-position
+        # Create t vector which indicates the x-position
     t = np.arange(-N / 2.0 + 0.5, N / 2.0, 1.0, dtype=np.float64)
 
     # Get kernel
@@ -98,9 +115,78 @@ def gaussian_kernel(sigma, order=0, N=None, returnt=False):
 
 def gaussian_kernel2D(mu, cov, samples):
     """ gaussian_kernel2D(mu, cov, samples)
-    2D gaussian kernel with the soecified means and covariances
+    2D Gaussian kernel with the specified means and covariance
     """
 
-    g2 = np.random.multivariate_normal(mu, cov, samples)
+    twod_gaussian = np.random.multivariate_normal(mu, cov, samples)
 
-    return g2
+    return twod_gaussian
+
+
+
+def smooth_signal(signal, kernel):
+    """ smooth_signal(signal, kernel)
+    Smooth the given 1D signal by convolution with a specified kernel
+    """
+    return np.convolve(signal, kernel, mode='same')
+
+
+def compute_curvature(curve, sigma):
+    """ compute_curvature(curve, sigma)
+    Compute the curvature of a 2D curve as given in Mohkatarian et. al.
+    and return the curvature signal at the given sigma
+
+    Components of the 2D curve are:
+    curve[0,:] and curve[1,:]
+
+    Parameters
+    -------------
+    curve : numpy matrix
+        Two row matrix representing 2D curve
+    sigma : float
+        Kernel width
+
+    """
+
+    if curve[0, :].size < 2:
+        raise Exception("Curve must have at least 2 points")
+
+    sigx = curve[0, :]
+    sigy = curve[1, :]
+    g = gaussian_kernel(sigma, 0, sigx.size, False)
+    g_s = gaussian_kernel(sigma, 1, sigx.size, False)
+    g_ss = gaussian_kernel(sigma, 2, sigx.size, False)
+
+    X_s = smooth_signal(sigx, g_s)
+    Y_s = smooth_signal(sigy, g_s)
+    X_ss = smooth_signal(sigx, g_ss)
+    Y_ss = smooth_signal(sigy, g_ss)
+
+    kappa = ((X_s * Y_ss) - (X_ss * Y_s)) / (X_s**2 + Y_s**2)**(1.5)
+
+    return kappa, smooth_signal(sigx, g), smooth_signal(sigy, g)
+
+
+def rebin(a, shape):
+    """ rebin a piece of data """
+    sh = shape[0], a.shape[0] // shape[0], shape[1], a.shape[1] // shape[1]
+    return a.reshape(sh).mean(-1).mean(1)
+
+
+def load_and_pack_data(data, lenx, leny):
+    """ load_and_pack_data(data, lenx, leny)
+    Given a dictionary of training data with {data :label},
+    loads the data into a pair X,Y
+    """
+
+    Xdata = np.zeros(shape=(len(data), (lenx * leny)))
+    Ydata = np.zeros(len(data))
+
+    idx = 0
+    for f, v in data.items():
+        print(f, v, idx)
+        d = np.load(f)
+        Xdata[idx, :] = rebin(d, [lenx, leny]).reshape(lenx * leny)
+        Ydata[idx] = v
+        idx += 1
+    return Xdata, Ydata

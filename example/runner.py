@@ -1,11 +1,8 @@
-
-
 from css import CurvatureScaleSpace, SlicedCurvatureScaleSpace
 import numpy as np
 import matplotlib.pyplot as plt
 
 import scipy.signal as sg
-from sklearn.mixture import GMM, DPGMM
 
 
 def simple_signal(np_points):
@@ -17,14 +14,8 @@ def simple_signal(np_points):
 
     return curve
 
-def some_function(some_args):
-    """ 
-    :Parameters:
-    """
-    pass
 
-
-def run():
+def example():
     curve = simple_signal(np_points=400)
     c = CurvatureScaleSpace()
     cs = c.generate_css(curve, curve.shape[1], 0.01)
@@ -44,4 +35,4 @@ def run():
     plt.show()
 
 if __name__ == '__main__':
-    run()
+    example()

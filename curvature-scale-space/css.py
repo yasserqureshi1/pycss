@@ -1,5 +1,3 @@
-
-
 from utils import gaussian_kernel, compute_curvature
 import numpy as np
 
@@ -36,9 +34,9 @@ class CurvatureScaleSpace(object):
 
         cols = curve[0, :].size
         rows = max_sigma // step_sigma
-        css = np.zeros(shape=(rows, cols))
+        css = np.zeros(shape=(int(rows), cols))
 
-        srange = np.linspace(1, max_sigma - 1, rows)
+        srange = np.linspace(1, int(max_sigma) - 1, int(rows))
         for i, sigma in enumerate(srange):
             kappa, sx, sy = compute_curvature(curve, sigma)
 
